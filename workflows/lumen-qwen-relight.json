@@ -1,0 +1,89 @@
+{
+  "id": "lumen-hotel-relight",
+  "revision": 1,
+  "last_node_id": 18,
+  "last_link_id": 20,
+  "version": 0.4,
+  "extra": {
+    "workflow_title": "间光 · 酒店民宿结构锁定精修",
+    "lumen": {
+      "note": "Drag this JSON onto the ComfyUI canvas. Install missing custom nodes via Manager. Fill LoadImage with your hotel photo. First sentence of the prompt must keep structure locked."
+    }
+  },
+  "config": {},
+  "groups": [
+    {
+      "title": "1  Load",
+      "bounding": [40, 40, 380, 420],
+      "color": "#3f3f3f",
+      "font_size": 16
+    },
+    {
+      "title": "2  Structure lock",
+      "bounding": [460, 40, 520, 420],
+      "color": "#3f3f3f",
+      "font_size": 16
+    },
+    {
+      "title": "3  Qwen Image Edit 2509 + Relight",
+      "bounding": [1020, 40, 640, 620],
+      "color": "#3f3f3f",
+      "font_size": 16
+    },
+    {
+      "title": "4  Compare",
+      "bounding": [1700, 40, 420, 520],
+      "color": "#3f3f3f",
+      "font_size": 16
+    }
+  ],
+  "nodes": [
+    {
+      "id": 1,
+      "type": "MarkdownNote",
+      "pos": [60, 80],
+      "size": [340, 240],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {},
+      "widgets_values": [
+        "间光 Lumen\n\n1 Load hotel photo\n2 Canny + Depth lock furniture\n3 Qwen Edit 2509 + Relight LoRA\n4 denoise 0.28  CN 0.8  steps 8  cfg 1.0\n\nPrompt first line must say: keep structure unchanged."
+      ]
+    },
+    {
+      "id": 2,
+      "type": "LoadImage",
+      "pos": [60, 360],
+      "size": [320, 314],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        { "name": "IMAGE", "type": "IMAGE", "links": [1, 2, 3, 17] },
+        { "name": "MASK", "type": "MASK", "links": null }
+      ],
+      "properties": { "Node name for S&R": "LoadImage" },
+      "widgets_values": ["hotel-room.png", "image"]
+    },
+    {
+      "id": 10,
+      "type": "TextEncodeQwenImageEditPlus",
+      "pos": [480, 360],
+      "size": [480, 200],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [{ "name": "CONDITIONING", "type": "CONDITIONING", "links": [] }],
+      "properties": {},
+      "widgets_values": [
+        "保持图中室内结构、墙体、地面拼花、家具位置、物品形状与镜头角度完全不变。不要增删、移动或替换任何物体。不要改变品牌标识与文字。仅调整光线：酒店建筑灯带与暖色筒灯全开，胡桃木被金辉照亮，阴影干净，曝光均匀。氛围：当代暖奢酒店。专业酒店民宿宣传摄影，真实材质，锐利细节，无人，无水印。"
+      ]
+    }
+  ],
+  "links": []
+}
