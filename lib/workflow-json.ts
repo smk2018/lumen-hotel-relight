@@ -1,28 +1,34 @@
 import { buildComfyPrompt, type PromptInput } from "./prompt";
-import { lightingById, styleById } from "./presets";
+import {
+  lightingById,
+  styleById,
+  denoiseForLock,
+  controlNetForLock,
+} from "./presets";
 
 /** ComfyUI UI-format graph. Drag onto the canvas to load. */
 export function buildComfyWorkflow(input: PromptInput) {
   const { positive, negative } = buildComfyPrompt(input);
   const light = lightingById(input.lighting);
   const style = styleById(input.style);
-  const denoise = Number((1.05 - input.lock * 0.55).toFixed(2));
-  const cnStrength = Number((0.45 + input.lock * 0.4).toFixed(2));
+  const denoise = denoiseForLock(input.lock);
+  const cnStrength = controlNetForLock(input.lock);
 
   return {
     id: "lumen-hotel-relight",
-    revision: 1,
+    revision: 2,
     last_node_id: 16,
     last_link_id: 18,
     version: 0.4,
     extra: {
-      workflow_title: "间光 · 酒店民宿结构锁定精修",
+      workflow_title: "间光 · 酒店民宿曝光色温校正",
       lumen: {
         lighting: light.id,
         style: style.id,
         lock: input.lock,
         denoise,
         controlnet: cnStrength,
+        relight: light.relight,
       },
     },
     groups: [
@@ -39,7 +45,7 @@ export function buildComfyWorkflow(input: PromptInput) {
         font_size: 16,
       },
       {
-        title: "3  Qwen Image Edit 2509 + Relight",
+        title: "3  Qwen Image Edit 2509 + 轻度 Relight",
         bounding: [1020, 40, 640, 620],
         color: "#3f3f3f",
         font_size: 16,
@@ -57,21 +63,14 @@ export function buildComfyWorkflow(input: PromptInput) {
         1,
         [60, 80],
         [
-          "间光 Lumen · 单工作流",
+          "间光 Lumen · 曝光 / 色温 / 光比",
           "",
-          `光线：${light.nameZh}  ${light.kelvin}`,
-          `风格：${style.nameZh}`,
+          `任务：${light.nameZh}  ${light.kelvin}`,
+          `风格：${style.nameZh}（校正请保持「不换风格」）`,
           `结构锁：${Math.round(input.lock * 100)}%`,
-          `建议 denoise：${denoise}   ControlNet：${cnStrength}`,
+          `denoise：${denoise}   ControlNet：${cnStrength}   Relight：${light.relight}`,
           "",
-          "模型放到 ComfyUI/models：",
-          "· unet/qwen_image_edit_2509_fp8_e4m3fn.safetensors",
-          "· clip/qwen_2.5_vl_7b_fp8.safetensors",
-          "· vae/qwen_image_vae.safetensors",
-          "· loras/Qwen-Image-Edit-2509-Lightning-8steps.safetensors",
-          "· loras/Qwen-Edit-2509-Relight.safetensors",
-          "· controlnet/InstantX-Qwen-Image-ControlNet-Union.safetensors",
-          "",
+          "只做技术校正，不发明光影。",
           "缺节点：ComfyUI Manager → Install Missing Custom Nodes",
         ].join("\n"),
       ),
@@ -157,7 +156,7 @@ export function buildComfyWorkflow(input: PromptInput) {
         inputs: [{ name: "model", type: "MODEL", link: 7 }],
         outputs: [{ name: "MODEL", type: "MODEL", links: [8] }],
         properties: {},
-        widgets_values: ["Qwen-Edit-2509-Relight.safetensors", 0.85],
+        widgets_values: ["Qwen-Edit-2509-Relight.safetensors", light.relight],
       },
       {
         id: 8,
@@ -392,7 +391,7 @@ export const MODEL_PACK = [
     href: "https://huggingface.co/lightx2v/Qwen-Image-Lightning",
   },
   {
-    name: "Relight LoRA (dx8152)",
+    name: "Relight LoRA (dx8152) · 校正时 0.3–0.45",
     path: "models/loras/Qwen-Edit-2509-Relight.safetensors",
     href: "https://huggingface.co/dx8152/Qwen-Image-Edit-2509-Relight",
   },
@@ -412,26 +411,26 @@ export const PIPELINE_STEPS = [
   {
     n: "02",
     title: "结构锁",
-    body: "Canny 锁边缘（墙线、家具轮廓），DepthAnything V2 锁空间。两者叠在 ControlNet Union 上，strength 0.65–0.85。这是「东西不能动」的核心。",
+    body: "Canny 锁边缘，DepthAnything V2 锁空间。ControlNet strength 0.80–0.90。校正任务必须把家具钉死。",
   },
   {
     n: "03",
-    title: "指令编码",
-    body: "Qwen Image Edit 2509 吃自然语言。中文指令比英文更稳。第一句永远写「保持结构完全不变」。",
+    title: "校正指令",
+    body: "提示词只写：提曝光、校色温、正常光比、保持原有光影方向。禁止写电影感、暖奢、换风格。",
   },
   {
     n: "04",
-    title: "Relight LoRA",
-    body: "dx8152 的 Relight / Light Migration LoRA 专门改光照，不改几何。Lightning 8-step 把采样压到 8 步。",
+    title: "轻度 Relight",
+    body: "Relight LoRA 降到 0.3–0.45，只帮曝光和色温，不改光的方向。Lightning 8-step，CFG 1.0。",
   },
   {
     n: "05",
-    title: "低 denoise 采样",
-    body: "结构锁 80% 时 denoise 约 0.28。高于 0.45 家具开始漂移。CFG 保持 1.0（Qwen Edit 不需要高 CFG）。",
+    title: "低 denoise",
+    body: "校正默认 denoise 0.18–0.26。高于 0.35 家具会开始漂。结构锁建议 85–92%。",
   },
   {
     n: "06",
-    title: "对照 + 超分",
-    body: "Image Comparer 左右拖看结构有没有跑。过关后再接 SeedVR2 或 Ultimate SD Upscale 出 4K 宣传图。",
+    title: "对照",
+    body: "Image Comparer 检查椅脚、开关、插座、镜子倒影。过关后再超分，不要在这一步追分辨率。",
   },
 ];
