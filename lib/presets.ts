@@ -77,7 +77,7 @@ export const LIGHTINGS: LightingPreset[] = [
     kelvin: "5000K",
     relight: 0.45,
     promptZh:
-      "只纠正色温与色偏：钩丝灯偏黄、日光灯偏绿、混合光偏冷都拉回中性。曝光与光比尽量不动",
+      "只纠正色温与色偏：钨丝灯偏黄、日光灯偏绿、混合光偏冷都拉回中性。曝光与光比尽量不动",
     promptEn:
       "correct white balance only: neutralize tungsten yellow, fluorescent green, mixed-light cyan. Keep exposure and contrast almost unchanged",
     wash: "linear-gradient(90deg,#f0d9b8 0%,#ece8e0 50%,#c9d4de 100%)",
